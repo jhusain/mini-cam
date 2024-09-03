@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mini Cam</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        #camera {
+            width: 100%;
+            max-width: 400px;
+        }
+
+        #photo {
+            margin-top: 20px;
+            width: 100%;
+            max-width: 400px;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Camera PWA</h1>
+    <video id="camera" autoplay></video>
+    <canvas id="photo" style="display:none;"></canvas>
+    <button id="take-photo">Take Photo</button>
+
+    <script>
+        (function() {
+            const video = document.getElementById('camera');
+            const canvas = document.getElementById('photo');
+            const takePhotoButton = document.getElementById('take-photo');
+
+            // Request access to the rear camera
+            navigator.mediaDevices.getUserMedia({
+                video: {
+                    facingMode: { exact: "environment" }
+                }
+            })
+            .then(stream => {
+                video.srcObject = stream;
+            })
+            .catch(err => {
+                console.error("Error accessing the camera: ", err);
+            });
+
+            takePhotoButton.addEventListener('click', () => {
+                const context = canvas.getContext('2d');
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                canvas.toBlob(blob => {
+                    const compressedBlob = compressImage(blob);
+                    triggerDownload(compressedBlob, 'photo.png');
+                }, 'image/png');
+            });
+
+            function compressImage(blob) {
+                // For now, just return the original blob; compression logic can be added here
+                // Use image processing libraries or canvas manipulation for real compression
+                return blob;
+            }
+
+            function triggerDownload(blob, filename) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+        })();
+    </script>
+</body>
+</html>
