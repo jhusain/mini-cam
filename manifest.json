@@ -1,7 +1,7 @@
 {
   "name": "Mini Cam",
   "short_name": "Mini Cam",
-  "description": "An offline HTML editor with live preview capabilities.",
+  "description": "Tiny camera app for taking pictures of odds and ends like receipts, which I don't want to sync to my cloud storage. The images are just downloaded to disk immediately.",
   "start_url": "/mini-cam/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
