@@ -8,60 +8,179 @@
     <style>
         body {
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
             height: 100vh;
-            margin: 0;
             background-color: #f0f0f0;
         }
 
-        #camera {
+        #camera-container {
+            position: relative;
+            flex-grow: 1;
             width: 100%;
-            max-width: 400px;
+        }
+
+        #camera {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+            opacity: 1; /* Ensure it's capturing */
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: #f0f0f0; /* Same as body background or you can use rgba(0, 0, 0, 0.5) for semi-transparent */
+            z-index: 2;
+        }
+
+        #button-container {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px;
+            background-color: #ffffff;
+            border-top: 1px solid #cccccc;
+        }
+
+        #take-photo {
+            width: 60px;
+            height: 60px;
+            background-color: white;
+            border-radius: 50%;
+            border: 2px solid #000;
+            cursor: pointer;
+            transition: background-color 0.1s, border-color 0.1s;
+        }
+
+        #take-photo:active {
+            background-color: black;
+            border-color: white;
+        }
+
+        #toggle-camera {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+            outline: none;
+        }
+
+        #toggle-camera svg {
+            width: 40px;
+            height: 40px;
+            fill: black;
         }
 
         #photo {
-            margin-top: 20px;
-            width: 100%;
-            max-width: 400px;
-        }
-
-        button {
-            margin-top: 10px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
+            display: none;
         }
     </style>
 </head>
 <body>
-    <h1>Camera PWA</h1>
-    <video id="camera" autoplay></video>
-    <canvas id="photo" style="display:none;"></canvas>
-    <button id="take-photo">Take Photo</button>
+    <div id="camera-container">
+        <video id="camera" autoplay></video>
+        <div id="overlay"></div>
+    </div>
+    <div id="button-container">
+        <button id="take-photo"></button>
+        <button id="toggle-camera">
+            <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M0 0h24v24H0z" fill="none"/>
+                <path d="M21 5H3c-1.1 0-1.99.9-1.99 2L1 19c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H3V7h18v12zm-9-3.5l2.5 3.01L17.5 13l4.5 6H2l5.5-7z"/>
+            </svg>
+        </button>
+    </div>
+    <canvas id="photo"></canvas>
 
     <script>
         (function() {
             const video = document.getElementById('camera');
             const canvas = document.getElementById('photo');
             const takePhotoButton = document.getElementById('take-photo');
+            const toggleCameraButton = document.getElementById('toggle-camera');
+            const overlay = document.getElementById('overlay');
+            const toggleIcon = document.getElementById('toggle-icon');
 
-            // Request access to the rear camera
-            navigator.mediaDevices.getUserMedia({
-                video: {
-                    facingMode: { exact: "environment" }
+            let cameraStream = null;
+
+            const cameraStateKey = 'cameraState';
+            const cameraState = localStorage.getItem(cameraStateKey);
+
+            // Initialize camera visibility based on saved state
+            if (cameraState === 'shown') {
+                video.style.zIndex = '1';
+                overlay.style.display = 'none';
+                toggleCameraButton.innerHTML = landscapeIcon();
+                startCamera();
+            } else {
+                video.style.zIndex = '-1';
+                overlay.style.display = 'block';
+                toggleCameraButton.innerHTML = landscapeOffIcon();
+            }
+
+            toggleCameraButton.addEventListener('click', () => {
+                if (overlay.style.display === 'block') {
+                    overlay.style.display = 'none';
+                    video.style.zIndex = '1';
+                    toggleCameraButton.innerHTML = landscapeIcon();
+                    startCamera();
+                    localStorage.setItem(cameraStateKey, 'shown');
+                } else {
+                    overlay.style.display = 'block';
+                    video.style.zIndex = '-1';
+                    toggleCameraButton.innerHTML = landscapeOffIcon();
+                    stopCamera();
+                    localStorage.setItem(cameraStateKey, 'hidden');
                 }
-            })
-            .then(stream => {
-                video.srcObject = stream;
-            })
-            .catch(err => {
-                console.error("Error accessing the camera: ", err);
             });
 
             takePhotoButton.addEventListener('click', () => {
+                if (!cameraStream) {
+                    startCamera().then(() => {
+                        capturePhoto();
+                    });
+                } else {
+                    capturePhoto();
+                }
+            });
+
+            function startCamera() {
+                return navigator.mediaDevices.getUserMedia({
+                    video: {
+                        facingMode: { exact: "environment" }
+                    }
+                })
+                .then(stream => {
+                    cameraStream = stream;
+                    video.srcObject = stream;
+                })
+                .catch(err => {
+                    console.error("Error accessing the camera: ", err);
+                });
+            }
+
+            function stopCamera() {
+                if (cameraStream) {
+                    let tracks = cameraStream.getTracks();
+                    tracks.forEach(track => {
+                        track.stop();
+                    });
+                    cameraStream = null;
+                    video.srcObject = null;
+                }
+            }
+
+            function capturePhoto() {
                 const context = canvas.getContext('2d');
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
@@ -69,13 +188,13 @@
 
                 canvas.toBlob(blob => {
                     const compressedBlob = compressImage(blob);
-                    triggerDownload(compressedBlob, 'photo.png');
+                    const randomSuffix = Math.floor(Math.random() * 100000); // Generate random number
+                    triggerDownload(compressedBlob, `photo_${randomSuffix}.png`);
                 }, 'image/png');
-            });
+            }
 
             function compressImage(blob) {
                 // For now, just return the original blob; compression logic can be added here
-                // Use image processing libraries or canvas manipulation for real compression
                 return blob;
             }
 
@@ -88,6 +207,22 @@
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
+            }
+
+            function landscapeIcon() {
+                return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M21 5H3c-1.1 0-1.99.9-1.99 2L1 19c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H3V7h18v12zm-9-3.5l2.5 3.01L17.5 13l4.5 6H2l5.5-7z"/>
+                </svg>`;
+            }
+
+            function landscapeOffIcon() {
+                return `
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M0 0h24v24H0z" fill="none"/>
+                    <path d="M21 5H3c-1.1 0-1.99.9-1.99 2L1 19c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H3V7h18v12zm-11.5-3l2.5 3.01L17.5 13l2.5 3H2l4-6 1.5 2z"/>
+                </svg>`;
             }
         })();
     </script>
