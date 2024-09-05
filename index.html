@@ -144,6 +144,26 @@
                 }
             });
 
+            // Add these two event listeners in the same place where the `takePhotoButton` listener is
+video.addEventListener('click', () => {
+    if (!cameraStream) {
+        startCamera().then(() => {
+            capturePhoto();
+        });
+    } else {
+        capturePhoto();
+    }
+});
+
+overlay.addEventListener('click', () => {
+    if (!cameraStream) {
+        startCamera().then(() => {
+            capturePhoto();
+        });
+    } else {
+        capturePhoto();
+    }
+});
             takePhotoButton.addEventListener('click', () => {
                 if (!cameraStream) {
                     startCamera().then(() => {
