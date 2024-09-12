@@ -94,10 +94,7 @@
     <div id="button-container">
         <button id="take-photo"></button>
         <button id="toggle-camera">
-            <svg id="toggle-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M0 0h24v24H0z" fill="none"/>
-                <path d="M21 5H3c-1.1 0-1.99.9-1.99 2L1 19c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H3V7h18v12zm-9-3.5l2.5 3.01L17.5 13l4.5 6H2l5.5-7z"/>
-            </svg>
+            <img id="toggle-icon" src="landscape-off.svg" alt="Toggle Icon">
         </button>
     </div>
     <canvas id="photo"></canvas>
@@ -120,50 +117,30 @@
             if (cameraState === 'shown') {
                 video.style.zIndex = '1';
                 overlay.style.display = 'none';
-                toggleCameraButton.innerHTML = landscapeIcon();
+                toggleIcon.src = 'landscape.svg';
                 startCamera();
             } else {
                 video.style.zIndex = '-1';
                 overlay.style.display = 'block';
-                toggleCameraButton.innerHTML = landscapeOffIcon();
+                toggleIcon.src = 'landscape-off.svg';
             }
 
             toggleCameraButton.addEventListener('click', () => {
                 if (overlay.style.display === 'block') {
                     overlay.style.display = 'none';
                     video.style.zIndex = '1';
-                    toggleCameraButton.innerHTML = landscapeIcon();
+                    toggleIcon.src = 'landscape.svg';
                     startCamera();
                     localStorage.setItem(cameraStateKey, 'shown');
                 } else {
                     overlay.style.display = 'block';
                     video.style.zIndex = '-1';
-                    toggleCameraButton.innerHTML = landscapeOffIcon();
+                    toggleIcon.src = 'landscape-off.svg';
                     stopCamera();
                     localStorage.setItem(cameraStateKey, 'hidden');
                 }
             });
 
-            // Add these two event listeners in the same place where the `takePhotoButton` listener is
-video.addEventListener('click', () => {
-    if (!cameraStream) {
-        startCamera().then(() => {
-            capturePhoto();
-        });
-    } else {
-        capturePhoto();
-    }
-});
-
-overlay.addEventListener('click', () => {
-    if (!cameraStream) {
-        startCamera().then(() => {
-            capturePhoto();
-        });
-    } else {
-        capturePhoto();
-    }
-});
             takePhotoButton.addEventListener('click', () => {
                 if (!cameraStream) {
                     startCamera().then(() => {
@@ -214,7 +191,6 @@ overlay.addEventListener('click', () => {
             }
 
             function compressImage(blob) {
-                // For now, just return the original blob; compression logic can be added here
                 return blob;
             }
 
@@ -227,22 +203,6 @@ overlay.addEventListener('click', () => {
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
-            }
-
-            function landscapeIcon() {
-                return `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M21 5H3c-1.1 0-1.99.9-1.99 2L1 19c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H3V7h18v12zm-9-3.5l2.5 3.01L17.5 13l4.5 6H2l5.5-7z"/>
-                </svg>`;
-            }
-
-            function landscapeOffIcon() {
-                return `
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                    <path d="M0 0h24v24H0z" fill="none"/>
-                    <path d="M21 5H3c-1.1 0-1.99.9-1.99 2L1 19c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 14H3V7h18v12zm-11.5-3l2.5 3.01L17.5 13l2.5 3H2l4-6 1.5 2z"/>
-                </svg>`;
             }
         })();
     </script>
